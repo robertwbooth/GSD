@@ -5,7 +5,8 @@ export type View =
   | { kind: "list"; id: string }
   | { kind: "tag"; tag: string }
   | { kind: "search"; q: string }
-  | { kind: "feedback" };
+  | { kind: "feedback" }
+  | { kind: "import" };
 
 const SMART = new Set(["today", "tomorrow", "next7", "inbox", "all", "completed", "wontdo", "trash"]);
 
@@ -16,6 +17,7 @@ export function parseHash(hash: string): View {
   if (a === "tag" && b) return { kind: "tag", tag: parts.slice(1).join("/") };
   if (a === "search") return { kind: "search", q: b ?? "" };
   if (a === "feedback") return { kind: "feedback" };
+  if (a === "import") return { kind: "import" };
   if (a && SMART.has(a)) return { kind: "smart", id: a as never };
   return { kind: "smart", id: "today" };
 }
@@ -27,6 +29,7 @@ export function viewHash(v: View): string {
     case "tag": return `#/tag/${v.tag.split("/").map(encodeURIComponent).join("/")}`;
     case "search": return `#/search/${encodeURIComponent(v.q)}`;
     case "feedback": return "#/feedback";
+    case "import": return "#/import";
   }
 }
 
@@ -48,5 +51,6 @@ export function describeView(v: View, listName: (id: string) => string | undefin
     case "tag": return `#${v.tag}`;
     case "search": return `Search: ${v.q}`;
     case "feedback": return "Feedback";
+    case "import": return "Import";
   }
 }

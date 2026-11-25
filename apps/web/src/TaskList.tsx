@@ -37,7 +37,8 @@ function tasksForView(view: View, tasks: Task[]): Task[] {
       const q = view.q.toLowerCase();
       return tasks.filter((t) => !t.deleted && (t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)));
     }
-    case "feedback": return [];
+    case "feedback":
+    case "import": return [];
   }
 }
 
@@ -66,6 +67,7 @@ export function TaskListView({
   const title = describeView(view, (id) => lists.find((l) => l.id === id)?.name);
   const readOnly = view.kind === "smart" && ["completed", "wontdo", "trash"].includes(view.id);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [limit, setLimit] = useState(300);
 
   const ctx: QuickAddContext = {
     listId: view.kind === "list" ? view.id : INBOX_ID,
@@ -100,7 +102,12 @@ export function TaskListView({
         <div className="task-scroll">
           {shown.length === 0 && <EmptyState view={view} />}
           {view.kind === "smart" && ["completed", "wontdo", "trash"].includes(view.id) ? (
-            <TaskGroup title={null} tasks={shown} selectedId={selectedId} onSelect={onSelect} trash={view.id === "trash"} />
+            <>
+              <TaskGroup title={null} tasks={shown.slice(0, limit)} selectedId={selectedId} onSelect={onSelect} trash={view.id === "trash"} />
+              {shown.length > limit && (
+                <button className="link-btn show-more" onClick={() => setLimit(limit + 300)}>Show more ({shown.length - limit} left)</button>
+              )}
+            </>
           ) : (
             groupByDate(buildTree(shown).roots).map((g) => (
               <TaskGroup key={g.key} title={g.title} tasks={g.tasks} all={shown} selectedId={selectedId} onSelect={onSelect} overdue={g.key === "overdue"} />
@@ -111,7 +118,7 @@ export function TaskListView({
               <button className="group-title" onClick={() => setShowCompleted(!showCompleted)} aria-expanded={showCompleted}>
                 {showCompleted ? "▾" : "▸"} Completed <span className="muted">{completedInList.length}</span>
               </button>
-              {showCompleted && completedInList.map((t) => <TaskRow key={t.id} task={t} selected={t.id === selectedId} onSelect={onSelect} />)}
+              {showCompleted && completedInList.slice(0, limit).map((t) => <TaskRow key={t.id} task={t} selected={t.id === selectedId} onSelect={onSelect} />)}
             </div>
           )}
         </div>

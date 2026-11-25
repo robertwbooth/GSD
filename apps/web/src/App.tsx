@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { onUndoChange, undo, allLists } from "./actions";
 import { Detail } from "./Detail";
 import { FeedbackDialog, FeedbackPage, flushFeedback } from "./Feedback";
+import { ImportPage } from "./Import";
 import { useStoreVersion } from "./hooks";
 import { Login } from "./Login";
 import { Sidebar } from "./Sidebar";
@@ -68,6 +69,8 @@ function Shell() {
       <div className="scrim" onClick={() => setSidebarOpen(false)} />
       {view.kind === "feedback" ? (
         <FeedbackPage context={context} onOpenSidebar={() => setSidebarOpen(true)} />
+      ) : view.kind === "import" ? (
+        <ImportPage onOpenSidebar={() => setSidebarOpen(true)} />
       ) : (
         <TaskListView view={view} selectedId={selected} onSelect={setSelected} onOpenSidebar={() => setSidebarOpen(true)} />
       )}
