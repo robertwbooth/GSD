@@ -1,0 +1,13 @@
+services:
+  gsd:
+    build: .
+    image: gsd
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: .env
+    volumes:
+      - gsd-data:/data
+
+volumes:
+  gsd-data:

@@ -1,4 +1,8 @@
-import { RRule } from "rrule";
+import * as rrule from "rrule";
+
+// rrule ships CommonJS for Node and ESM for bundlers; take RRule from whichever we got.
+const RRule: typeof rrule.RRule =
+  rrule.RRule ?? (rrule as unknown as { default: typeof rrule }).default.RRule;
 import type { Repeat } from "./types.js";
 
 // rrule works in UTC. Represent local wall-clock times as "floating" UTC dates so
