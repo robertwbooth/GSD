@@ -97,7 +97,23 @@ export interface FilterRule {
   match: "all" | "any";
 }
 
-export type EntityType = "task" | "list" | "section" | "folder" | "filter";
+/** A Notion-style note page. Pages nest to any depth through parentId. */
+export interface Page {
+  id: string;
+  title: string;
+  /** Emoji shown before the title. */
+  icon: string | null;
+  parentId: string | null;
+  /** Rich text stored as HTML (the editor's native format). */
+  content: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  deleted: boolean;
+  sourceId: string | null;
+}
+
+export type EntityType = "task" | "list" | "section" | "folder" | "filter" | "page";
 
 export interface EntityMap {
   task: Task;
@@ -105,6 +121,7 @@ export interface EntityMap {
   section: Section;
   folder: Folder;
   filter: Filter;
+  page: Page;
 }
 
 export const INBOX_ID = "inbox";

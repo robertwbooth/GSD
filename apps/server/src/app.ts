@@ -19,7 +19,7 @@ export interface AppOptions {
   backupDir?: string;
 }
 
-const ENTITY_TYPES = new Set(["task", "list", "section", "folder", "filter"]);
+const ENTITY_TYPES = new Set(["task", "list", "section", "folder", "filter", "page"]);
 const FEEDBACK_KINDS = new Set(["bug", "idea", "change"]);
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");

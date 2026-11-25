@@ -48,7 +48,7 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
   const [search, setSearch] = useState("");
   const state = useSyncState();
 
-  const active = (v: View) => viewHash(v) === viewHash(view);
+  const active = (v: View) => viewHash(v) === viewHash(view) || (v.kind === "notes" && view.kind === "notes");
   const link = (v: View, label: string, icon: string, count?: number) => (
     <a key={viewHash(v)} href={viewHash(v)} className={`nav-item${active(v) ? " active" : ""}`} onClick={onNavigate}>
       <span className="nav-icon" aria-hidden>{icon}</span>
@@ -92,6 +92,9 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
         {SMART_ITEMS.map((s) =>
           link({ kind: "smart", id: s.id }, s.name, s.icon, topLevelCount(s.id === "inbox" ? listTasks(INBOX_ID, tasks) : smartListTasks(s.id, tasks))),
         )}
+      </div>
+      <div className="nav-group">
+        {link({ kind: "notes", id: null }, "Notes", "📝")}
       </div>
       <div className="nav-heading">
         <span>Lists</span>

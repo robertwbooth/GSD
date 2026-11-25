@@ -8,3 +8,4 @@ export * from "./smartlists.js";
 export * from "./sync.js";
 export * from "./import/csv.js";
 export * from "./import/ticktick.js";
+export * from "./import/notes.js";
