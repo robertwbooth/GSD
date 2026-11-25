@@ -175,9 +175,12 @@ test("works offline and syncs between devices", async ({ browser }) => {
   await signIn(pb);
   const name = `Synced ${uid()}`;
 
+  // The service worker must control the page before it can load offline.
+  await pa.waitForFunction(() => !!navigator.serviceWorker?.controller);
   await a.setOffline(true);
   await pa.getByRole("link", { name: /Inbox/ }).click();
   await addTask(pa, name);
+  await pa.evaluate(() => (window as unknown as { gsdFlush: () => Promise<void> }).gsdFlush());
   await pa.reload();
   await expect(row(pa, name)).toBeVisible(); // kept on device
   await a.setOffline(false);

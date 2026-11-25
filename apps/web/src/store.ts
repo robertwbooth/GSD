@@ -85,11 +85,30 @@ export function save<K extends EntityType>(type: K, id: string, fields: Partial<
   const { record } = mergeRecord(map.get(id), change);
   map.set(id, record);
   outbox.push(change);
-  void idb?.put("records", record, `${type}:${id}`);
-  void idb?.add("outbox", change);
+  persist(record, change);
   emit();
   scheduleSync();
 }
+
+// Record and outbox entry are written in one transaction so a reload can never keep
+// one without the other. `pendingWrites` lets sync (and tests) wait for them to land.
+let pendingWrites: Promise<unknown> = Promise.resolve();
+
+function persist(record: SyncRecord, change: SyncRecord) {
+  if (!idb) return;
+  const tx = idb.transaction(["records", "outbox"], "readwrite");
+  void tx.objectStore("records").put(record, `${record.type}:${record.id}`);
+  void tx.objectStore("outbox").add(change);
+  const done = tx.done.catch((e) => console.error("could not save locally", e));
+  pendingWrites = Promise.all([pendingWrites, done]);
+}
+
+/** Resolves once every local edit so far is stored in IndexedDB. */
+export function flushWrites(): Promise<void> {
+  return pendingWrites.then(() => undefined);
+}
+
+if (typeof window !== "undefined") (window as unknown as { gsdFlush: typeof flushWrites }).gsdFlush = flushWrites;
 
 /** Apply several edits as one user action. */
 export function saveMany(edits: { type: EntityType; id: string; fields: object }[]): void {
@@ -163,6 +182,7 @@ export function sync(): Promise<void> {
 }
 
 async function doSync(): Promise<void> {
+  await flushWrites();
   syncState = "syncing";
   emit();
   try {
