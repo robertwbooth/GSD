@@ -20,8 +20,10 @@ test("create, edit, nest and sync note pages", async ({ browser }) => {
 
   // Sub-page from the toolbar links back to its parent.
   await page.getByRole("button", { name: "Sub-page" }).click();
-  await page.getByLabel("Page title").fill("Child page");
+  // Wait for the new page to open before typing its title.
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(title);
+  await expect(page.getByLabel("Page title")).toHaveValue("");
+  await page.getByLabel("Page title").fill("Child page");
   await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: title }).click();
   await expect(page.getByLabel("Page title")).toHaveValue(title);
   await page.locator(".note-title").blur();
