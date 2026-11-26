@@ -142,6 +142,10 @@ export function addList(name: string): TaskList {
   return list;
 }
 
+export function allFolders() {
+  return store.all("folder").filter((f) => !f.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 export function updateList(id: string, fields: Partial<TaskList>) {
   store.save("list", id, fields);
 }

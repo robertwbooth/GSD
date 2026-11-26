@@ -90,6 +90,8 @@ a { color: var(--accent); }
 .nav-icon { width: 18px; text-align: center; color: var(--muted); }
 .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav-count { color: var(--muted); font-size: 12px; }
+.folder-head { background: none; border: 0; width: 100%; text-align: left; font-weight: 500; }
+.folder-lists .nav-item { padding-left: 28px; }
 .nav-add input { width: 100%; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--accent); background: var(--bg); }
 .sync-status { display: flex; justify-content: space-between; font-size: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
 .sync-status .link-btn { color: var(--muted); }
@@ -123,6 +125,7 @@ a { color: var(--accent); }
 .chip.p5 { color: var(--p5); } .chip.p3 { color: var(--p3); }
 
 .task-scroll { overflow-y: auto; flex: 1; padding: 0 12px 96px; }
+.show-more { display: block; margin: 8px auto; }
 .empty { color: var(--muted); text-align: center; padding: 48px 16px; }
 .group { margin-bottom: 8px; }
 .group-title { background: none; border: 0; font-weight: 600; padding: 8px; color: var(--text); }
@@ -233,3 +236,10 @@ a { color: var(--accent); }
   .task-meta .list-name, .task-meta .tag { display: none; }
   .board { padding: 4px 16px 24px; }
 }
+
+/* Import */
+.import-body { padding: 0 20px 96px; max-width: 680px; }
+.import-summary { padding-left: 20px; line-height: 1.9; }
+.import-actions { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
+.file-pick input { padding: 12px; border: 1px dashed var(--border); border-radius: 10px; width: 100%; background: var(--bg-side); }
+.as-link { display: inline-block; text-decoration: none; margin-top: 8px; }

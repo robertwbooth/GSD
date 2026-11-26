@@ -1,0 +1,18 @@
+"Date: 2026-11-25+0000"
+"Version: 7.2"
+"Status: 
+0 Normal
+-1 Abandoned 
+2 Completed"
+"Folder Name","List Name","Title","Kind","Tags","Content","Is Check list","Start Date","Due Date","Reminder","Repeat","Priority","Status","Created Time","Completed Time","Order","Timezone","Is All Day","Is Floating","Column Name","Column Order","View Mode","taskId","parentId","projectKind"
+"","Inbox","Buy milk","TEXT","errands","","N","","","","","0","0","2026-11-20T10:00:00+0000","","-100","America/Vancouver","","false",,,"list","1","","TASK"
+"💚Personal","🚴Cycling","Service bike","CHECKLIST","bike, maintenance","Before the ride
+▫Chain lube
+▪Tyre pressure
+▫","Y","2026-11-27T08:00:00+0000","2026-11-27T08:00:00+0000","P0DT9H0M0S","","5","0","2026-11-21T10:00:00+0000","","10","America/Vancouver","true","false",,,"list","2","","TASK"
+"💚Personal","🚴Cycling","Order parts","TEXT","","Brake pads, ""the good ones""","N","2026-11-26T17:30:00+0000","2026-11-26T17:30:00+0000","-PT60M
+PT0S","","3","2","2026-11-21T11:00:00+0000","2026-11-22T12:00:00+0000","20","Europe/London","false","false",,,"list","3","2","TASK"
+"💚Personal","🚴Cycling","Weekly ride","TEXT","","","N","2026-11-29T08:00:00+0000","2026-11-29T08:00:00+0000","","FREQ=WEEKLY;INTERVAL=1;BYDAY=SU","1","0","2026-11-21T11:00:00+0000","","30","GMT-07:00","true","false",,,"list","4","","TASK"
+"🎤Work","Projects","Launch","TEXT","","","N","","","","ERULE:NAME=CUSTOM;BYDATE=20250711,20250712","0","-1","2026-11-21T11:00:00+0000","2026-11-23T11:00:00+0000","40","","","false","Admin","-90","kanban","5","","TASK"
+"🎤Work","Projects","Old task","TEXT","","","N","","","","","0","0","2026-11-21T11:00:00+0000","","50","","","false","Not Sectioned","0","kanban","6","999","TASK"
+"","😴Dreams","Flying dream","NOTE","dreams","I could fly over the city.","N","","","","","0","0","2026-11-01T11:00:00+0000","","60","","","false",,,"list","7","","NOTE"

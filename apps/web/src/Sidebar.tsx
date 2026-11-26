@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { INBOX_ID, smartListTasks, listTasks, tagTasks, type Task } from "@gsd/core";
-import { addList, allLists, allTags, allTasks } from "./actions";
+import { addList, allFolders, allLists, allTags, allTasks } from "./actions";
 import { logout, pendingChanges, sync } from "./store";
 import { useSyncState } from "./hooks";
 import { viewHash, type View } from "./view";
@@ -18,6 +18,13 @@ const BOTTOM_ITEMS = [
   { id: "trash", name: "Trash", icon: "🗑" },
 ] as const;
 
+/** "🚴Cycling" → ["🚴", "Cycling"], so a leading emoji becomes the icon like in TickTick. */
+const EMOJI = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:\uFE0F|\u200D(?:\p{Extended_Pictographic}|♂|♀)|\p{Regional_Indicator}|[\u{1F3FB}-\u{1F3FF}])*\uFE0F?)\s*(.*)$/u;
+export function splitEmoji(name: string, fallback: string): [string, string] {
+  const m = name.match(EMOJI);
+  return m && m[2] ? [m[1]!, m[2]] : [fallback, name];
+}
+
 function topLevelCount(tasks: Task[]) {
   return tasks.filter((t) => !t.parentId || !tasks.some((p) => p.id === t.parentId)).length;
 }
@@ -26,6 +33,16 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
   const tasks = allTasks();
   const lists = allLists();
   const tags = allTags();
+  const folders = allFolders();
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("gsd-collapsed-folders") ?? "[]")); } catch { return new Set(); }
+  });
+  const toggleFolder = (id: string) => {
+    const next = new Set(collapsed);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setCollapsed(next);
+    try { localStorage.setItem("gsd-collapsed-folders", JSON.stringify([...next])); } catch { /* storage unavailable */ }
+  };
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
@@ -81,7 +98,21 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
         <button className="icon-btn" aria-label="Add list" onClick={() => setAdding(true)}>+</button>
       </div>
       <div className="nav-group">
-        {lists.map((l) => link({ kind: "list", id: l.id }, l.name, "☰", topLevelCount(listTasks(l.id, tasks))))}
+        {folders.map((f) => {
+          const inFolder = lists.filter((l) => l.folderId === f.id);
+          if (!inFolder.length) return null;
+          const open = !collapsed.has(f.id);
+          return (
+            <div key={f.id} className="folder">
+              <button className="nav-item folder-head" aria-expanded={open} onClick={() => toggleFolder(f.id)}>
+                <span className="nav-icon" aria-hidden>{open ? "▾" : "▸"}</span>
+                <span className="nav-label">{f.name}</span>
+              </button>
+              {open && <div className="folder-lists">{inFolder.map((l) => link({ kind: "list", id: l.id }, splitEmoji(l.name, "☰")[1], splitEmoji(l.name, "☰")[0], topLevelCount(listTasks(l.id, tasks))))}</div>}
+            </div>
+          );
+        })}
+        {lists.filter((l) => !l.folderId || !folders.some((f) => f.id === l.folderId)).map((l) => link({ kind: "list", id: l.id }, splitEmoji(l.name, "☰")[1], splitEmoji(l.name, "☰")[0], topLevelCount(listTasks(l.id, tasks))))}
         {adding && (
           <form onSubmit={submitList} className="nav-add">
             <input autoFocus placeholder="List name" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => !name && setAdding(false)} aria-label="New list name" />
@@ -96,6 +127,7 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
       )}
       <div className="nav-group nav-bottom">
         {BOTTOM_ITEMS.map((s) => link({ kind: "smart", id: s.id }, s.name, s.icon))}
+        {link({ kind: "import" }, "Import", "⤓")}
         {link({ kind: "feedback" }, "Feedback", "💬")}
       </div>
       <div className="sync-status">

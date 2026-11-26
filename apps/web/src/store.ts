@@ -26,6 +26,7 @@ interface Meta {
 }
 
 const DB_NAME = "gsd";
+const PUSH_BATCH = 1000;
 let idb: IDBPDatabase | null = null;
 const records: Records = { task: new Map(), list: new Map(), section: new Map(), folder: new Map(), filter: new Map() };
 let outbox: SyncRecord[] = [];
@@ -110,9 +111,28 @@ export function flushWrites(): Promise<void> {
 
 if (typeof window !== "undefined") (window as unknown as { gsdFlush: typeof flushWrites }).gsdFlush = flushWrites;
 
-/** Apply several edits as one user action. */
-export function saveMany(edits: { type: EntityType; id: string; fields: object }[]): void {
-  for (const e of edits) save(e.type, e.id, e.fields as never);
+/**
+ * Apply many edits at once (for example an import): one IndexedDB transaction and one
+ * re-render instead of thousands.
+ */
+export async function saveMany(edits: { type: EntityType; id: string; fields: object }[]): Promise<void> {
+  if (!edits.length) return;
+  const clockValue = clock.tick();
+  const tx = idb?.transaction(["records", "outbox"], "readwrite");
+  for (const e of edits) {
+    const change = makeChange(e.type, e.id, e.fields, clockValue) as SyncRecord;
+    const map = records[e.type];
+    const { record } = mergeRecord(map.get(e.id), change);
+    map.set(e.id, record);
+    outbox.push(change);
+    void tx?.objectStore("records").put(record, `${e.type}:${e.id}`);
+    void tx?.objectStore("outbox").add(change);
+  }
+  const done = tx ? tx.done : Promise.resolve();
+  pendingWrites = Promise.all([pendingWrites, done.catch((err) => console.error("could not save locally", err))]);
+  await done;
+  emit();
+  scheduleSync(0);
 }
 
 // --- Server -----------------------------------------------------------------
@@ -186,14 +206,16 @@ async function doSync(): Promise<void> {
   syncState = "syncing";
   emit();
   try {
-    if (outbox.length) {
-      const sending = outbox.slice();
+    // Push in batches so a large import never makes one huge request.
+    while (outbox.length) {
+      const sending = outbox.slice(0, PUSH_BATCH);
       await api("/api/sync", { method: "POST", body: JSON.stringify({ changes: sending }) });
       outbox = outbox.slice(sending.length);
       const tx = idb!.transaction("outbox", "readwrite");
       const keys = await tx.store.getAllKeys();
-      for (const k of keys.slice(0, sending.length)) await tx.store.delete(k);
+      for (const k of keys.slice(0, sending.length)) void tx.store.delete(k);
       await tx.done;
+      emit();
     }
     let more = true;
     while (more) {
