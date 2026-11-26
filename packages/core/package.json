@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "chrono-node": "^2.10.3",
+    "marked": "^15.0.12",
     "rrule": "^2.8.1"
   },
   "devDependencies": {

@@ -28,7 +28,7 @@ interface Meta {
 const DB_NAME = "gsd";
 const PUSH_BATCH = 1000;
 let idb: IDBPDatabase | null = null;
-const records: Records = { task: new Map(), list: new Map(), section: new Map(), folder: new Map(), filter: new Map() };
+const records: Records = { task: new Map(), list: new Map(), section: new Map(), folder: new Map(), filter: new Map(), page: new Map() };
 let outbox: SyncRecord[] = [];
 let meta: Meta = { token: null, cursor: 0, device: "" };
 let clock: HybridClock;

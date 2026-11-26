@@ -13,6 +13,7 @@ import {
 } from "@gsd/core";
 import {
   addSection,
+  allPages,
   allLists,
   allTasks,
   deleteList,
@@ -38,7 +39,8 @@ function tasksForView(view: View, tasks: Task[]): Task[] {
       return tasks.filter((t) => !t.deleted && (t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)));
     }
     case "feedback":
-    case "import": return [];
+    case "import":
+    case "notes": return [];
   }
 }
 
@@ -100,6 +102,7 @@ export function TaskListView({
         <BoardView listId={list.id} tasks={shown} selectedId={selectedId} onSelect={onSelect} />
       ) : (
         <div className="task-scroll">
+          {view.kind === "search" && <PageMatches q={view.q} />}
           {shown.length === 0 && <EmptyState view={view} />}
           {view.kind === "smart" && ["completed", "wontdo", "trash"].includes(view.id) ? (
             <>
@@ -309,6 +312,23 @@ function BoardView({ listId, tasks, selectedId, onSelect }: { listId: string; ta
         );
       })}
       <button className="add-column" onClick={() => { const n = prompt("Section name"); if (n?.trim()) addSection(listId, n.trim()); }}>+ Add section</button>
+    </div>
+  );
+}
+
+function PageMatches({ q }: { q: string }) {
+  const needle = q.toLowerCase();
+  const hits = allPages().filter((p) => p.title.toLowerCase().includes(needle) || p.content.replace(/<[^>]+>/g, " ").toLowerCase().includes(needle)).slice(0, 20);
+  if (!hits.length) return null;
+  return (
+    <div className="group">
+      <div className="group-title">Notes <span className="muted">{hits.length}</span></div>
+      {hits.map((p) => (
+        <a key={p.id} className="page-row" href={`#/note/${p.id}`} data-testid="page-row">
+          <span className="page-icon" aria-hidden>{p.icon ?? "📄"}</span>
+          <span className="page-title">{p.title || "Untitled"}</span>
+        </a>
+      ))}
     </div>
   );
 }

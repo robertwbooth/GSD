@@ -178,3 +178,28 @@ export function deleteSection(id: string) {
   for (const t of allTasks().filter((t) => t.sectionId === id)) store.save("task", t.id, { sectionId: null });
   store.save("section", id, { deleted: true });
 }
+
+// --- Notes ------------------------------------------------------------------
+
+export function allPages() {
+  return store.all("page").filter((p) => !p.deleted).sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+}
+
+export function createPage(parentId: string | null, title = ""): string {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  store.save("page", id, { id, title, icon: null, parentId, content: "", sortOrder: Date.now(), createdAt: now, updatedAt: now, deleted: false, sourceId: null });
+  return id;
+}
+
+export function updatePage(id: string, fields: Partial<import("@gsd/core").Page>) {
+  store.save("page", id, { ...fields, updatedAt: new Date().toISOString() });
+}
+
+/** Delete a page and everything under it. */
+export function deletePage(id: string) {
+  const pages = store.all("page");
+  const ids = [id];
+  for (let i = 0; i < ids.length; i++) for (const p of pages) if (p.parentId === ids[i] && !p.deleted) ids.push(p.id);
+  for (const pid of ids) store.save("page", pid, { deleted: true });
+}
