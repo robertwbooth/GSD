@@ -122,6 +122,42 @@ export function deleteTask(task: Task) {
   setUndo({ label: all.length > 1 ? `Deleted ${all.length} tasks` : "Deleted", restore: all.map((t) => ({ id: t.id, fields: { deleted: false } })), remove: [] });
 }
 
+/** Change some fields of a task with an Undo, e.g. from the right-click menu. */
+export function changeTask(task: Task, fields: Partial<Task>, label: string) {
+  const restore = [{ id: task.id, fields: snapshot(task, Object.keys(fields) as (keyof Task)[]) }];
+  store.save("task", task.id, fields);
+  setUndo({ label, restore, remove: [] });
+}
+
+/** Set a task's date to a day, keeping its time if it has one. `null` clears the date. */
+export function setTaskDay(task: Task, day: Date | null, label: string) {
+  if (!day) { changeTask(task, { dueDate: null, startDate: null, allDay: true, reminders: [] }, label); return; }
+  const d = new Date(day);
+  if (task.dueDate && !task.allDay) {
+    const old = new Date(task.dueDate);
+    d.setHours(old.getHours(), old.getMinutes(), 0, 0);
+  } else d.setHours(0, 0, 0, 0);
+  changeTask(task, { dueDate: d.toISOString(), startDate: null, allDay: task.dueDate ? task.allDay : true }, label);
+}
+
+export function duplicateTask(task: Task): Task {
+  const copy: Task = {
+    ...task,
+    id: crypto.randomUUID(),
+    title: task.title,
+    status: "open",
+    completedAt: null,
+    checklist: task.checklist.map((c) => ({ ...c, id: crypto.randomUUID() })),
+    sortOrder: task.sortOrder + 0.5,
+    createdAt: new Date().toISOString(),
+    deleted: false,
+    sourceId: null,
+  };
+  store.save("task", copy.id, copy);
+  setUndo({ label: "Duplicated", restore: [], remove: [copy.id] });
+  return copy;
+}
+
 export function restoreTask(task: Task) {
   store.save("task", task.id, { deleted: false });
 }
@@ -199,6 +235,15 @@ export function createPage(parentId: string | null, title = ""): string {
 
 export function updatePage(id: string, fields: Partial<import("@gsd/core").Page>) {
   store.save("page", id, { ...fields, updatedAt: new Date().toISOString() });
+}
+
+export function duplicatePage(id: string): string | null {
+  const p = store.get("page", id);
+  if (!p) return null;
+  const copy = crypto.randomUUID();
+  const now = new Date().toISOString();
+  store.save("page", copy, { ...p, id: copy, title: p.title ? `${p.title} (copy)` : "", sortOrder: p.sortOrder + 0.5, createdAt: now, updatedAt: now, sourceId: null, deleted: false });
+  return copy;
 }
 
 /** Delete a page and everything under it. */

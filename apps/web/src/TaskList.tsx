@@ -28,6 +28,8 @@ import {
   updateTask,
   type QuickAddContext,
 } from "./actions";
+import { openContextMenu } from "./ContextMenu";
+import { pageMenu, taskMenu } from "./menus";
 import { describeView, type View } from "./view";
 
 function tasksForView(view: View, tasks: Task[]): Task[] {
@@ -232,6 +234,7 @@ export function TaskRow({
         className={`task-row${selected ? " selected" : ""}${task.status !== "open" ? " done" : ""}`}
         style={{ paddingLeft: 12 + depth * 24 }}
         onClick={() => onSelect(task.id)}
+        onContextMenu={(e) => openContextMenu(e, taskMenu(task, onSelect), task.title || "Untitled")}
         draggable={draggable}
         onDragStart={(e: DragEvent) => e.dataTransfer.setData("text/task-id", task.id)}
         data-testid="task-row"
@@ -328,7 +331,7 @@ function PageMatches({ q }: { q: string }) {
     <div className="group">
       <div className="group-title">Notes <span className="muted">{hits.length}</span></div>
       {hits.map((p) => (
-        <a key={p.id} className="page-row" href={`#/note/${p.id}`} data-testid="page-row">
+        <a key={p.id} className="page-row" href={`#/note/${p.id}`} data-testid="page-row" onContextMenu={(e) => openContextMenu(e, pageMenu(p.id, (id) => { location.hash = id ? `#/note/${id}` : "#/notes"; }), p.title || "Untitled")}>
           <span className="page-icon" aria-hidden>{p.icon ?? "📄"}</span>
           <span className="page-title">{p.title || "Untitled"}</span>
         </a>
