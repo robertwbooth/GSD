@@ -294,3 +294,7 @@ a.page-row { color: var(--text); text-decoration: none; }
   .note-editor { padding: 8px 16px 60px; }
   .note-title { font-size: 24px; }
 }
+
+.repeat-history { margin-top: 16px; }
+.repeat-history ul { list-style: none; margin: 4px 0 0; padding: 0 0 0 20px; }
+.repeat-history li { padding: 3px 0; font-size: 13px; }
