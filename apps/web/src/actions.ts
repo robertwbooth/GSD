@@ -142,6 +142,11 @@ export function addList(name: string): TaskList {
   return list;
 }
 
+/** Ids of lists the user has hidden, which Today, Tomorrow, Next 7 Days and All leave out. */
+export function hiddenListIds(): Set<string> {
+  return new Set(allLists().filter((l) => l.hidden).map((l) => l.id));
+}
+
 export function allFolders() {
   return store.all("folder").filter((f) => !f.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
 }

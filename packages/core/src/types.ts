@@ -61,6 +61,8 @@ export interface TaskList {
   sortOrder: number;
   deleted: boolean;
   sourceId: string | null;
+  /** Hidden lists sit in a collapsed "Hidden" group and stay out of Today, Tomorrow, Next 7 Days and All. */
+  hidden?: boolean;
 }
 
 export interface Section {
