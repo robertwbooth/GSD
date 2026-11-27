@@ -26,7 +26,7 @@ export function taskMenu(task: Task, onSelect: (id: string | null) => void): Men
 
   const today = startOfDay(new Date());
   const nextMonday = addDays(today, ((8 - today.getDay()) % 7) || 7);
-  const lists = [{ id: INBOX_ID, name: "📥 Inbox" }, ...allLists().filter((l) => !l.hidden)];
+  const lists = [{ id: INBOX_ID, name: "📥 Inbox" }, ...allLists().filter((l) => !l.hidden && !l.archived)];
 
   return [
     { label: "Open", icon: "↗", onClick: () => onSelect(task.id) },

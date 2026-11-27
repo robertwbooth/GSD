@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completeTask, createTask, descendants, repeatHistory } from "../src/tasks.js";
+import { completeTask, createTask, descendants, repeatCompletions, repeatHistory } from "../src/tasks.js";
 import { describeRepeat, nextOccurrence } from "../src/repeat.js";
 
 const now = new Date(2026, 10, 25, 9, 0);
@@ -87,6 +87,16 @@ describe("repeatHistory", () => {
     const b = { ...t, id: "b", status: "completed" as const, completedAt: "2026-02-01T00:00:00Z", repeat: null };
     const other = { ...a, id: "c", listId: "m" };
     expect(repeatHistory(t, [t, a, b, other]).map((x) => x.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("repeatCompletions", () => {
+  it("lists completions of all repeating tasks but not one-off tasks", () => {
+    const r = createTask({ title: "Gym", listId: "l", repeat: { rrule: "FREQ=DAILY" } });
+    const done = { ...r, id: "d1", repeat: null, status: "completed" as const, completedAt: "2026-03-01T00:00:00Z" };
+    const ended = createTask({ title: "Course", repeat: { rrule: "FREQ=WEEKLY" }, status: "completed", completedAt: "2026-04-01T00:00:00Z" });
+    const oneOff = createTask({ title: "Call", status: "completed", completedAt: "2026-05-01T00:00:00Z" });
+    expect(repeatCompletions([r, done, ended, oneOff]).map((t) => t.title)).toEqual(["Course", "Gym"]);
   });
 });
 
