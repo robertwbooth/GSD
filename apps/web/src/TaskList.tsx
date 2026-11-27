@@ -18,6 +18,7 @@ import {
   allTasks,
   deleteList,
   deleteSection,
+  hiddenListIds,
   quickAdd,
   renameSection,
   restoreTask,
@@ -31,7 +32,7 @@ import { describeView, type View } from "./view";
 
 function tasksForView(view: View, tasks: Task[]): Task[] {
   switch (view.kind) {
-    case "smart": return smartListTasks(view.id, tasks);
+    case "smart": return smartListTasks(view.id, tasks, new Date(), hiddenListIds());
     case "list": return listTasks(view.id, tasks);
     case "tag": return tagTasks(view.tag, tasks);
     case "search": {
@@ -148,6 +149,9 @@ function ListMenu({ listId, name }: { listId: string; name: string }) {
         <div className="menu" role="menu" onMouseLeave={() => setOpen(false)}>
           <button role="menuitem" onClick={() => { const n = prompt("Rename list", name); if (n?.trim()) updateList(listId, { name: n.trim() }); setOpen(false); }}>Rename</button>
           <button role="menuitem" onClick={() => { const n = prompt("Section name"); if (n?.trim()) addSection(listId, n.trim()); setOpen(false); }}>Add section</button>
+          <button role="menuitem" onClick={() => { const l = allLists().find((x) => x.id === listId); updateList(listId, { hidden: !l?.hidden }); setOpen(false); }}>
+            {allLists().find((x) => x.id === listId)?.hidden ? "Show list" : "Hide list"}
+          </button>
           <button role="menuitem" className="danger" onClick={() => {
             const list = allLists().find((l) => l.id === listId);
             if (list && confirm(`Delete "${name}" and its tasks? They go to Trash.`)) { deleteList(list); location.hash = "#/inbox"; }

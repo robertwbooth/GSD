@@ -24,6 +24,11 @@ describe("smart lists", () => {
   it("Tomorrow is only tomorrow", () => expect(titles(smartListTasks("tomorrow", tasks, now))).toEqual(["tomorrow"]));
   it("Next 7 Days", () =>
     expect(titles(smartListTasks("next7", tasks, now))).toEqual(["overdue", "today", "tomorrow", "in5"]));
+  it("leaves hidden lists out of Today and All", () => {
+    const hidden = new Set(["work"]);
+    expect(titles(smartListTasks("today", tasks, now, hidden))).toEqual(["today"]);
+    expect(titles(smartListTasks("all", tasks, now, hidden))).not.toContain("tomorrow");
+  });
   it("Inbox", () => expect(titles(smartListTasks("inbox", tasks, now))).toEqual(["today", "in5", "in10", "nodate"]));
   it("Completed, Won't Do, Trash", () => {
     expect(titles(smartListTasks("completed", tasks, now))).toEqual(["done"]);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { onUndoChange, undo, allLists } from "./actions";
+import { ContextMenuHost } from "./ContextMenu";
 import { Detail } from "./Detail";
 import { FeedbackDialog, FeedbackPage, flushFeedback } from "./Feedback";
 import { ImportPage } from "./Import";
@@ -82,6 +83,7 @@ function Shell() {
       {feedbackOpen && (
         <FeedbackDialog context={context} onClose={() => setFeedbackOpen(false)} onDone={(msg) => setToast({ msg, undo: false })} />
       )}
+      <ContextMenuHost />
       {toast && (
         <div className="toast" role="status">
           <span>{toast.msg}</span>

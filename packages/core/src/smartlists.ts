@@ -51,7 +51,10 @@ export function matchesRule(t: Task, rule: FilterRule, now: Date): boolean {
 }
 
 /** Tasks shown in a built-in smart list. Today, Tomorrow and Next 7 Days include overdue tasks like TickTick. */
-export function smartListTasks(id: SmartListId, tasks: Task[], now = new Date()): Task[] {
+export function smartListTasks(id: SmartListId, tasks: Task[], now = new Date(), hiddenListIds?: ReadonlySet<string>): Task[] {
+  if (hiddenListIds?.size && (id === "today" || id === "tomorrow" || id === "next7" || id === "all")) {
+    tasks = tasks.filter((t) => !hiddenListIds.has(t.listId));
+  }
   let out: Task[];
   switch (id) {
     case "today": out = tasks.filter((t) => open(t) && matchesDue(t, "today", now)); break;
