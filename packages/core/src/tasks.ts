@@ -1,4 +1,5 @@
 import { newId } from "./ids.js";
+import { startOfDay } from "./dates.js";
 import { nextOccurrence } from "./repeat.js";
 import { INBOX_ID, type Task, type TaskList } from "./types.js";
 
@@ -54,7 +55,11 @@ export interface CompleteResult {
  */
 export function completeTask(task: Task, now = new Date()): CompleteResult {
   if (task.repeat && task.dueDate) {
-    const next = nextOccurrence(task.repeat, new Date(task.dueDate), now);
+    let next = nextOccurrence(task.repeat, new Date(task.dueDate), now);
+    // An overdue task skips the dates that have already passed, so it lands on
+    // today or later instead of the next missed date.
+    const floor = task.allDay ? startOfDay(now) : now;
+    for (let i = 0; next && next < floor && i < 5000; i++) next = nextOccurrence({ ...task.repeat, fromCompletion: false }, next, now);
     if (next) {
       const history: Task = {
         ...task,
@@ -108,4 +113,19 @@ export function descendants(tasks: Task[], id: string): Task[] {
     }
   }
   return out;
+}
+
+/**
+ * Past completions of a repeating task. Each completion leaves a completed copy with the
+ * same title, list and parent (TickTick backups have the same copies), newest first.
+ */
+export function repeatHistory(task: Task, tasks: Task[]): Task[] {
+  const title = task.title.trim();
+  return tasks
+    .filter(
+      (t) =>
+        t.id !== task.id && !t.deleted && t.status !== "open" && t.title.trim() === title &&
+        t.listId === task.listId && (t.parentId ?? null) === (task.parentId ?? null),
+    )
+    .sort((a, b) => Date.parse(b.completedAt ?? b.dueDate ?? "0") - Date.parse(a.completedAt ?? a.dueDate ?? "0"));
 }

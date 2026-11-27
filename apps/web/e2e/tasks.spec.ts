@@ -61,6 +61,10 @@ test("repeating task moves to its next date when completed", async ({ page }) =>
   await expect(row(page, name)).toContainText("Today");
   await row(page, name).getByRole("checkbox").click();
   await expect(row(page, name)).toContainText("Tomorrow");
+  // The task's details list each past completion.
+  await row(page, name).click();
+  await page.getByRole("button", { name: /History/ }).click();
+  await expect(page.locator(".repeat-history li")).toHaveCount(1);
   await page.getByRole("link", { name: /Completed/ }).click();
   await expect(row(page, name)).toBeVisible();
 });
