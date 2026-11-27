@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { describeRepeat, descendants, INBOX_ID, newId, PRIORITY_LABEL, type Priority, type Repeat, type Task } from "@gsd/core";
+import { describeRepeat, descendants, INBOX_ID, newId, PRIORITY_LABEL, repeatHistory, type Priority, type Repeat, type Task } from "@gsd/core";
 import { addSubtask, allLists, allTasks, deleteTask, moveTask, restoreTask, setWontDo, toggleComplete, updateTask } from "./actions";
 import { get } from "./store";
 import { TaskRow } from "./TaskList";
@@ -65,6 +65,7 @@ function DetailInner({ task, onClose, onSelect }: { task: Task; onClose: () => v
   const lists = allLists();
   const all = allTasks();
   const subtasks = all.filter((t) => t.parentId === task.id && !t.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
+  const history = task.repeat ? repeatHistory(task, all) : [];
   const parent = task.parentId ? all.find((t) => t.id === task.parentId) : undefined;
   const subtree = new Map<string, Task[]>();
   for (const t of [task, ...descendants(all, task.id)]) {
@@ -212,6 +213,8 @@ function DetailInner({ task, onClose, onSelect }: { task: Task; onClose: () => v
         <SubtaskAdd parent={task} />
       </div>
 
+      {history.length > 0 && <RepeatHistory history={history} onSelect={onSelect} />}
+
       <footer className="detail-footer">
         <select aria-label="List" value={task.listId} onChange={(e) => moveTask(task, e.target.value)}>
           <option value={INBOX_ID}>Inbox</option>
@@ -249,3 +252,31 @@ function bind(d: ReturnType<typeof useDraft>) {
   };
 }
 
+
+function RepeatHistory({ history, onSelect }: { history: Task[]; onSelect: (id: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const [limit, setLimit] = useState(10);
+  const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "No date");
+  return (
+    <div className="repeat-history">
+      <button className="group-title" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? "▾" : "▸"} History <span className="muted">{history.length} done</span>
+      </button>
+      {open && (
+        <ul>
+          {history.slice(0, limit).map((h) => (
+            <li key={h.id}>
+              <button className="link-btn" onClick={() => onSelect(h.id)}>
+                {h.status === "wontdo" ? "✕" : "✓"} {fmt(h.completedAt)}
+              </button>
+              {h.dueDate && <span className="muted"> for {fmt(h.dueDate)}</span>}
+            </li>
+          ))}
+          {history.length > limit && (
+            <li><button className="link-btn" onClick={() => setLimit(limit + 20)}>Show more ({history.length - limit} left)</button></li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}

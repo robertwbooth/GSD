@@ -316,3 +316,6 @@ a.page-row { color: var(--text); text-decoration: none; }
 .section-toggle { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; }
 .nav-heading .caret { display: inline-block; width: 14px; color: var(--muted); }
 .nav-item.hidden-item { opacity: 0.6; }
+.repeat-history { margin-top: 16px; }
+.repeat-history ul { list-style: none; margin: 4px 0 0; padding: 0 0 0 20px; }
+.repeat-history li { padding: 3px 0; font-size: 13px; }
