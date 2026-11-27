@@ -12,6 +12,8 @@ import TableHeader from "@tiptap/extension-table-header";
 import Image from "@tiptap/extension-image";
 import type { Page } from "@gsd/core";
 import { allPages, createPage, deletePage, updatePage } from "./actions";
+import { openContextMenu } from "./ContextMenu";
+import { pageMenu } from "./menus";
 import { get } from "./store";
 
 const go = (id: string | null) => {
@@ -76,7 +78,7 @@ export function NotesView({ id, onOpenSidebar }: { id: string | null; onOpenSide
       const open = expanded.has(p.id);
       return (
         <div key={p.id}>
-          <div className={`page-row${p.id === id ? " selected" : ""}`} style={{ paddingLeft: 8 + depth * 16 }} onClick={() => go(p.id)} data-testid="page-row">
+          <div className={`page-row${p.id === id ? " selected" : ""}`} style={{ paddingLeft: 8 + depth * 16 }} onClick={() => go(p.id)} onContextMenu={(e) => openContextMenu(e, pageMenu(p.id, go), p.title || "Untitled")} data-testid="page-row">
             <button className="expander" aria-label={open ? "Collapse" : "Expand"} style={{ visibility: kids.length ? "visible" : "hidden" }} onClick={(e) => { e.stopPropagation(); toggle(p.id); }}>
               {open ? "▾" : "▸"}
             </button>
@@ -104,7 +106,7 @@ export function NotesView({ id, onOpenSidebar }: { id: string | null; onOpenSide
           {pages.length === 0 && <p className="empty">No notes yet. Add a page, or bring your notes over from Import.</p>}
           {matches
             ? matches.map((p) => (
-                <div key={p.id} className={`page-row${p.id === id ? " selected" : ""}`} onClick={() => go(p.id)} data-testid="page-row">
+                <div key={p.id} className={`page-row${p.id === id ? " selected" : ""}`} onClick={() => go(p.id)} onContextMenu={(e) => openContextMenu(e, pageMenu(p.id, go), p.title || "Untitled")} data-testid="page-row">
                   <span className="page-icon" aria-hidden>{p.icon ?? "📄"}</span>
                   <span className="page-title">{p.title || "Untitled"}</span>
                 </div>
@@ -163,6 +165,11 @@ function PageEditor({ id }: { id: string }) {
     }
   }, [id]);
 
+  // Pick up a title changed elsewhere (another device, or Rename in the right-click menu).
+  useEffect(() => {
+    if (page && page.title !== title && !titleTimer.current && document.activeElement?.className !== "note-title") setTitle(page.title);
+  }, [page?.title]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Show edits synced from another device when this one isn't typing.
   useEffect(() => {
     if (editor && page && !editor.isFocused && page.content !== editor.getHTML()) {
@@ -215,9 +222,12 @@ function PageEditor({ id }: { id: string }) {
             const v = e.target.value;
             setTitle(v);
             if (titleTimer.current) clearTimeout(titleTimer.current);
-            titleTimer.current = setTimeout(() => updatePage(id, { title: v }), 500);
+            titleTimer.current = setTimeout(() => { titleTimer.current = null; updatePage(id, { title: v }); }, 500);
           }}
-          onBlur={() => title !== page.title && updatePage(id, { title })}
+          onBlur={() => {
+            if (titleTimer.current) { clearTimeout(titleTimer.current); titleTimer.current = null; }
+            if (title !== page.title) updatePage(id, { title });
+          }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); editor?.commands.focus("start"); } }}
         />
       </div>
