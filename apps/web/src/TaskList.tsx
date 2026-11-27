@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
 import {
   dueLabel,
   groupByDate,
@@ -6,6 +6,7 @@ import {
   listTasks,
   parseQuickAdd,
   PRIORITY_LABEL,
+  repeatCompletions,
   smartListTasks,
   startOfDay,
   tagTasks,
@@ -100,14 +101,22 @@ export function TaskListView({
           </div>
         )}
       </header>
+      {list?.archived && (
+        <div className="banner" role="status">
+          This list is archived. Its tasks stay out of Today and the other smart lists.
+          <button className="link-btn" onClick={() => updateList(list.id, { archived: false })}>Unarchive</button>
+        </div>
+      )}
       {!readOnly && list?.viewMode !== "board" && <QuickAdd ctx={ctx} primary />}
       {list?.viewMode === "board" ? (
         <BoardView listId={list.id} tasks={shown} selectedId={selectedId} onSelect={onSelect} />
       ) : (
         <div className="task-scroll">
           {view.kind === "search" && <PageMatches q={view.q} />}
-          {shown.length === 0 && <EmptyState view={view} />}
-          {view.kind === "smart" && ["completed", "wontdo", "trash"].includes(view.id) ? (
+          {shown.length === 0 && !(view.kind === "smart" && view.id === "completed") && <EmptyState view={view} />}
+          {view.kind === "smart" && view.id === "completed" ? (
+            <CompletedView tasks={tasks} selectedId={selectedId} onSelect={onSelect} />
+          ) : view.kind === "smart" && ["wontdo", "trash"].includes(view.id) ? (
             <>
               <TaskGroup title={null} tasks={shown.slice(0, limit)} selectedId={selectedId} onSelect={onSelect} trash={view.id === "trash"} />
               {shown.length > limit && (
@@ -153,6 +162,9 @@ function ListMenu({ listId, name }: { listId: string; name: string }) {
           <button role="menuitem" onClick={() => { const n = prompt("Section name"); if (n?.trim()) addSection(listId, n.trim()); setOpen(false); }}>Add section</button>
           <button role="menuitem" onClick={() => { const l = allLists().find((x) => x.id === listId); updateList(listId, { hidden: !l?.hidden }); setOpen(false); }}>
             {allLists().find((x) => x.id === listId)?.hidden ? "Show list" : "Hide list"}
+          </button>
+          <button role="menuitem" onClick={() => { const l = allLists().find((x) => x.id === listId); updateList(listId, { archived: !l?.archived }); setOpen(false); }}>
+            {allLists().find((x) => x.id === listId)?.archived ? "Unarchive list" : "Archive list"}
           </button>
           <button role="menuitem" className="danger" onClick={() => {
             const list = allLists().find((l) => l.id === listId);
@@ -337,5 +349,69 @@ function PageMatches({ q }: { q: string }) {
         </a>
       ))}
     </div>
+  );
+}
+
+const COMPLETED_MODE = "gsd-completed-mode";
+
+/** Completed tasks by month, newest first, with a switch to show only repeating tasks' history. */
+function CompletedView({ tasks, selectedId, onSelect }: { tasks: Task[]; selectedId: string | null; onSelect: (id: string | null) => void }) {
+  const [mode, setMode] = useState<"all" | "repeating">(() => {
+    try { return localStorage.getItem(COMPLETED_MODE) === "repeating" ? "repeating" : "all"; } catch { return "all"; }
+  });
+  const [limit, setLimit] = useState(200);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const items = mode === "repeating" ? repeatCompletions(tasks) : smartListTasks("completed", tasks);
+  const shown = items.slice(0, limit);
+
+  // Load more as the end of the list scrolls into view.
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || shown.length >= items.length || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) setLimit((n) => n + 200); }, { rootMargin: "400px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shown.length, items.length]);
+
+  function choose(m: "all" | "repeating") {
+    setMode(m);
+    setLimit(200);
+    try { localStorage.setItem(COMPLETED_MODE, m); } catch { /* storage unavailable */ }
+  }
+
+  const months: { key: string; title: string; tasks: Task[] }[] = [];
+  for (const t of shown) {
+    const d = t.completedAt ? new Date(t.completedAt) : null;
+    const key = d ? `${d.getFullYear()}-${d.getMonth()}` : "none";
+    let g = months[months.length - 1];
+    if (!g || g.key !== key) {
+      g = { key, title: d ? d.toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "No date", tasks: [] };
+      months.push(g);
+    }
+    g.tasks.push(t);
+  }
+
+  return (
+    <>
+      <div className="completed-bar">
+        <div className="segmented" role="group" aria-label="Show">
+          <button aria-pressed={mode === "all"} onClick={() => choose("all")}>All</button>
+          <button aria-pressed={mode === "repeating"} onClick={() => choose("repeating")}>Repeating tasks</button>
+        </div>
+        <span className="muted">{items.length} done</span>
+      </div>
+      {items.length === 0 && <p className="empty">{mode === "repeating" ? "No repeating tasks completed yet." : "Nothing completed yet."}</p>}
+      {months.map((m) => (
+        <div className="group" key={m.key}>
+          <div className="group-title">{m.title} <span className="muted">{m.tasks.length}{m === months[months.length - 1] && shown.length < items.length ? "+" : ""}</span></div>
+          {m.tasks.map((t) => <TaskRow key={t.id} task={t} selected={t.id === selectedId} onSelect={onSelect} />)}
+        </div>
+      ))}
+      {shown.length < items.length && (
+        <div ref={sentinel}>
+          <button className="link-btn show-more" onClick={() => setLimit(limit + 200)}>Show more ({items.length - shown.length} left)</button>
+        </div>
+      )}
+    </>
   );
 }

@@ -129,3 +129,15 @@ export function repeatHistory(task: Task, tasks: Task[]): Task[] {
     )
     .sort((a, b) => Date.parse(b.completedAt ?? b.dueDate ?? "0") - Date.parse(a.completedAt ?? a.dueDate ?? "0"));
 }
+
+/**
+ * Every completion of every repeating task, newest first: the completed copies left by
+ * each tick (or imported from TickTick), plus repeating tasks that were finished outright.
+ */
+export function repeatCompletions(tasks: Task[]): Task[] {
+  const key = (t: Task) => `${t.listId}\u0000${t.parentId ?? ""}\u0000${t.title.trim()}`;
+  const repeating = new Set(tasks.filter((t) => t.repeat && !t.deleted).map(key));
+  return tasks
+    .filter((t) => !t.deleted && t.status !== "open" && (t.repeat || repeating.has(key(t))))
+    .sort((a, b) => Date.parse(b.completedAt ?? "0") - Date.parse(a.completedAt ?? "0"));
+}

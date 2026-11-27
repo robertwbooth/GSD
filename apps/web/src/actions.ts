@@ -178,9 +178,9 @@ export function addList(name: string): TaskList {
   return list;
 }
 
-/** Ids of lists the user has hidden, which Today, Tomorrow, Next 7 Days and All leave out. */
+/** Ids of hidden or archived lists, which Today, Tomorrow, Next 7 Days and All leave out. */
 export function hiddenListIds(): Set<string> {
-  return new Set(allLists().filter((l) => l.hidden).map((l) => l.id));
+  return new Set(allLists().filter((l) => l.hidden || l.archived).map((l) => l.id));
 }
 
 export function allFolders() {

@@ -63,6 +63,8 @@ export interface TaskList {
   sourceId: string | null;
   /** Hidden lists sit in a collapsed "Hidden" group and stay out of Today, Tomorrow, Next 7 Days and All. */
   hidden?: boolean;
+  /** Archived lists are finished with: kept, but moved to "Archived lists" and left out of smart lists. */
+  archived?: boolean;
 }
 
 export interface Section {

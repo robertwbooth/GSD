@@ -34,8 +34,9 @@ function topLevelCount(tasks: Task[]) {
 export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => void }) {
   const tasks = allTasks();
   const allListsShown = allLists();
-  const lists = allListsShown.filter((l) => !l.hidden);
-  const hiddenLists = allListsShown.filter((l) => l.hidden);
+  const lists = allListsShown.filter((l) => !l.hidden && !l.archived);
+  const hiddenLists = allListsShown.filter((l) => l.hidden && !l.archived);
+  const archivedLists = allListsShown.filter((l) => l.archived);
   const hiddenTags = usePrefSet(HIDDEN_TAGS);
   const tagsAll = allTags();
   const tags = tagsAll.filter((t) => !hiddenTags.has(t));
@@ -92,10 +93,13 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
       l.hidden
         ? { label: "Show list", icon: "👁", onClick: () => updateList(l.id, { hidden: false }) }
         : { label: "Hide list", icon: "🙈", onClick: () => updateList(l.id, { hidden: true }) },
+      l.archived
+        ? { label: "Unarchive list", icon: "📤", onClick: () => updateList(l.id, { archived: false }) }
+        : { label: "Archive list", icon: "🗄", onClick: () => updateList(l.id, { archived: true }) },
       "sep",
       { label: "Delete list", icon: "🗑", danger: true, onClick: () => { if (confirm(`Delete "${l.name}" and its tasks? They go to Trash.`)) { deleteList(l); if (active({ kind: "list", id: l.id })) location.hash = "#/inbox"; } } },
     ];
-    return link({ kind: "list", id: l.id }, label, icon, topLevelCount(listTasks(l.id, tasks)), menu, l.hidden ? " hidden-item" : "");
+    return link({ kind: "list", id: l.id }, label, icon, l.archived ? undefined : topLevelCount(listTasks(l.id, tasks)), menu, l.hidden || l.archived ? " hidden-item" : "");
   }
 
   function tagLink(t: string, isHidden: boolean) {
@@ -161,6 +165,16 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: () => vo
               <span className="nav-count">{hiddenLists.length}</span>
             </button>
             {isOpen("section:hidden-lists", false) && <div className="folder-lists">{hiddenLists.map(listLink)}</div>}
+          </div>
+        )}
+        {archivedLists.length > 0 && (
+          <div className="folder">
+            <button className="nav-item folder-head" aria-expanded={isOpen("section:archived-lists", false)} onClick={() => toggleSection("section:archived-lists", false)}>
+              <span className="nav-icon" aria-hidden>{isOpen("section:archived-lists", false) ? "▾" : "▸"}</span>
+              <span className="nav-label">Archived lists</span>
+              <span className="nav-count">{archivedLists.length}</span>
+            </button>
+            {isOpen("section:archived-lists", false) && <div className="folder-lists">{archivedLists.map(listLink)}</div>}
           </div>
         )}
       </div>}
