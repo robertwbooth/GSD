@@ -46,7 +46,7 @@ export function stableHash(s: string): string {
 const STATUS: Record<string, TaskStatus> = { "0": "open", "2": "completed", "1": "completed", "-1": "wontdo" };
 const PRIORITIES = new Set([0, 1, 3, 5]);
 
-function normaliseZone(tz: string, fallback: string): string {
+export function normaliseZone(tz: string, fallback: string): string {
   const t = tz.trim();
   if (!t) return fallback;
   const gmt = t.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
@@ -64,7 +64,7 @@ function normaliseZone(tz: string, fallback: string): string {
 }
 
 /** TickTick writes "2024-09-01T07:00:00+0000"; make it parseable everywhere. */
-function parseInstant(s: string): Date | null {
+export function parseInstant(s: string): Date | null {
   if (!s) return null;
   const iso = s.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
   const d = new Date(iso);
@@ -72,15 +72,39 @@ function parseInstant(s: string): Date | null {
 }
 
 const dayFormatters = new Map<string, Intl.DateTimeFormat>();
-/** The calendar day of `d` in `tz`, as local midnight in the runtime's zone. */
-function calendarDay(d: Date, tz: string): Date {
+function ymdIn(d: Date, tz: string): [number, number, number] {
   let f = dayFormatters.get(tz);
   if (!f) {
     f = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
     dayFormatters.set(tz, f);
   }
-  const [y, m, day] = f.format(d).split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, day);
+  return f.format(d).split("-").map(Number) as [number, number, number];
+}
+
+/** Minutes `tz` is ahead of UTC at instant `d`. */
+function zoneOffset(d: Date, tz: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(d);
+  const n = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return (Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - d.getTime()) / 60_000;
+}
+
+/** Midnight at the start of y-m-d in `tz`, as an instant. */
+export function midnightInZone(y: number, m: number, d: number, tz: string): Date {
+  const guess = Date.UTC(y, m - 1, d);
+  let t = guess - zoneOffset(new Date(guess), tz) * 60_000;
+  t = guess - zoneOffset(new Date(t), tz) * 60_000;
+  return new Date(t);
+}
+
+/**
+ * The calendar day of `d` in `tz`, as midnight in `displayZone` (the zone the app shows dates in).
+ * Without `displayZone`, midnight in the runtime's zone, which is right in the browser.
+ */
+export function calendarDay(d: Date, tz: string, displayZone?: string): Date {
+  const [y, m, day] = ymdIn(d, tz);
+  return displayZone ? midnightInZone(y, m, day, displayZone) : new Date(y, m - 1, day);
 }
 
 /**

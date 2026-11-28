@@ -24,6 +24,11 @@ export function openDb(path: string) {
       created_at TEXT NOT NULL,
       last_seen TEXT
     );
+    CREATE TABLE IF NOT EXISTS ticktick_seen (
+      task_id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      fields TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS feedback (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       kind TEXT NOT NULL,
@@ -79,5 +84,23 @@ export function openDb(path: string) {
     };
   }
 
-  return { raw: db, push, pull, currentSeq, close: () => db.close() };
+  const byType = db.prepare<[string], { id: string; data: string; clocks: string }>("SELECT id, data, clocks FROM records WHERE type = ?");
+  const getMeta = db.prepare<[string], { value: string }>("SELECT value FROM meta WHERE key = ?");
+  const setMetaStmt = db.prepare("INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+  const delMetaStmt = db.prepare("DELETE FROM meta WHERE key = ?");
+
+  function get<T = Record<string, unknown>>(type: SyncRecord["type"], id: string): T | undefined {
+    const row = getRecord.get(type, id);
+    return row ? (JSON.parse(row.data) as T) : undefined;
+  }
+  function all<T = Record<string, unknown>>(type: SyncRecord["type"]): T[] {
+    return byType.all(type).map((r) => JSON.parse(r.data) as T);
+  }
+  const meta = {
+    get: (key: string) => getMeta.get(key)?.value,
+    set: (key: string, value: string) => void setMetaStmt.run(key, value),
+    delete: (key: string) => void delMetaStmt.run(key),
+  };
+
+  return { raw: db, push, pull, currentSeq, get, all, meta, close: () => db.close() };
 }
