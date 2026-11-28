@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TickTickSync } from "./TickTickSync";
 import { unzipSync } from "fflate";
 import { importNotion, importTickTick, isTickTickBackup, tickTickNotesToPages, type Page, type TickTickImport } from "@gsd/core";
 import * as store from "./store";
@@ -94,6 +95,7 @@ export function ImportPage({ onOpenSidebar }: { onOpenSidebar: () => void }) {
               <input type="file" accept=".csv,.zip,text/csv" aria-label="Choose backup file" onChange={(e) => void pick(e.target.files?.[0])} />
             </label>
             {stage.step === "error" && <p className="notice" role="alert">{stage.message}</p>}
+            <TickTickSync />
           </>
         )}
 

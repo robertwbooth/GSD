@@ -72,3 +72,11 @@ test("imports a Notion export into Notes", async ({ page }) => {
   await page.getByTestId("page-row").filter({ hasText: "Gear" }).click();
   await expect(page.locator(".note-body table")).toContainText("Tent");
 });
+
+test("Import explains how to turn on TickTick live sync", async ({ page }) => {
+  await signIn(page);
+  await page.getByRole("link", { name: /Import/ }).click();
+  const card = page.getByRole("region", { name: "TickTick live sync" });
+  await expect(card).toContainText("developer.ticktick.com");
+  await expect(card).toContainText("/api/ticktick/callback");
+});

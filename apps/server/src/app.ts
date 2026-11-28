@@ -6,6 +6,7 @@ import type { SyncRecord } from "@gsd/core";
 import { openDb } from "./db.js";
 import { createIssue, type GitHubConfig } from "./github.js";
 import { backupNow } from "./backup.js";
+import { createTickTickSync, type TickTickConfig } from "./ticktick.js";
 
 export interface AppOptions {
   dbPath: string;
@@ -17,6 +18,10 @@ export interface AppOptions {
   version?: string;
   /** Folder for daily database backups; none when unset. */
   backupDir?: string;
+  /** TickTick developer app for live sync; sync is off when unset. */
+  ticktick?: TickTickConfig | null;
+  /** How often to sync with TickTick. Default 15 minutes. */
+  ticktickIntervalMs?: number;
 }
 
 const ENTITY_TYPES = new Set(["task", "list", "section", "folder", "filter", "page"]);
@@ -192,6 +197,58 @@ export async function buildApp(opts: AppOptions) {
       error: r.last_error,
     };
   }
+
+  // --- TickTick live sync ---------------------------------------------------
+  const ticktick = createTickTickSync(db, opts.ticktick ?? null, opts.fetchImpl ?? fetch);
+  const originOf = (req: FastifyRequest) => {
+    const proto = String(req.headers["x-forwarded-proto"] ?? "").split(",")[0]?.trim() || (req.hostname.endsWith(".ts.net") ? "https" : req.protocol);
+    const host = String(req.headers["x-forwarded-host"] ?? req.headers.host ?? "");
+    return host ? `${proto}://${host}` : undefined;
+  };
+  const runTickTick = () => {
+    if (ticktick.isConnected()) ticktick.sync().catch((e) => app.log.warn({ err: (e as Error).message }, "TickTick sync failed"));
+  };
+  const ttTimer = setInterval(runTickTick, opts.ticktickIntervalMs ?? 15 * 60_000);
+  ttTimer.unref();
+  app.addHook("onClose", async () => clearInterval(ttTimer));
+
+  app.get("/api/ticktick", { preHandler: requireAuth }, async (req) => ticktick.status(originOf(req)));
+
+  app.post("/api/ticktick/connect", { preHandler: requireAuth }, async (req, reply) => {
+    const zone = String((req.body as { zone?: unknown } | null)?.zone ?? "UTC").slice(0, 64);
+    try {
+      return { url: ticktick.authorizeUrl(originOf(req), zone) };
+    } catch (e) {
+      return reply.code(400).send({ error: (e as Error).message });
+    }
+  });
+
+  // TickTick sends the browser back here after sign-in, so there is no bearer token; the
+  // one-time state from /connect proves the request started in GSD.
+  app.get("/api/ticktick/callback", async (req, reply) => {
+    const q = req.query as { code?: string; state?: string; error?: string };
+    try {
+      if (q.error || !q.code || !q.state) throw new Error(q.error ? `TickTick said: ${q.error}` : "TickTick didn't send a sign-in code.");
+      await ticktick.finishAuth(q.code, q.state);
+      runTickTick();
+    } catch (e) {
+      db.meta.set("ticktick.lastError", (e as Error).message);
+    }
+    return reply.redirect("/#/import");
+  });
+
+  app.post("/api/ticktick/sync", { preHandler: requireAuth }, async (_req, reply) => {
+    try {
+      return await ticktick.sync();
+    } catch (e) {
+      return reply.code(502).send({ error: (e as Error).message });
+    }
+  });
+
+  app.post("/api/ticktick/disconnect", { preHandler: requireAuth }, async () => {
+    ticktick.disconnect();
+    return { ok: true };
+  });
 
   // --- Web app --------------------------------------------------------------
   if (opts.webDir && existsSync(opts.webDir)) {

@@ -39,6 +39,15 @@ To update: `git pull && docker compose up -d --build`.
 
 Without a token, feedback is saved on the server and shown on the Feedback page.
 
+### Live sync with TickTick (optional)
+
+While you move over, GSD can check TickTick every 15 minutes. New tasks and edits in TickTick come into GSD, tasks no longer open in TickTick are marked done, and ticking a synced task in GSD completes it in TickTick. Tags and completed history come from the backup import, because TickTick's API doesn't offer them.
+
+1. Sign in at https://developer.ticktick.com/manage and create an app (any name).
+2. Set its redirect URL to `<your GSD address>/api/ticktick/callback`, for example `https://ghost-sbp.tailec0705.ts.net/api/ticktick/callback`.
+3. Add to `.env`: `GSD_PUBLIC_URL` (your GSD address), `GSD_TICKTICK_CLIENT_ID` and `GSD_TICKTICK_CLIENT_SECRET`, then restart.
+4. In GSD, open Import and press **Connect TickTick**.
+
 ### Use it away from home (Tailscale)
 
 No router ports need opening.

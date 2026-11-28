@@ -18,11 +18,21 @@ const github =
     ? { token: process.env.GSD_GITHUB_TOKEN, repo: process.env.GSD_GITHUB_REPO }
     : null;
 
+const ticktick =
+  process.env.GSD_TICKTICK_CLIENT_ID && process.env.GSD_TICKTICK_CLIENT_SECRET
+    ? {
+        clientId: process.env.GSD_TICKTICK_CLIENT_ID,
+        clientSecret: process.env.GSD_TICKTICK_CLIENT_SECRET,
+        publicUrl: process.env.GSD_PUBLIC_URL || undefined,
+      }
+    : null;
+
 const app = await buildApp({
   dbPath: join(dataDir, "gsd.db"),
   password,
   webDir: resolve(process.env.GSD_WEB_DIR ?? join(here, "../../web/dist")),
   github,
+  ticktick,
   logger: true,
   version: process.env.GSD_VERSION ?? "dev",
   backupDir: resolve(process.env.GSD_BACKUP_DIR ?? join(dataDir, "backups")),
